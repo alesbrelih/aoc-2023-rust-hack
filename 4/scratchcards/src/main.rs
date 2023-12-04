@@ -1,10 +1,11 @@
-use std::fs;
+use std::{collections::HashMap, fs};
 
 fn main() {
     let contents = fs::read_to_string("./input.txt").unwrap();
 
     first(&contents);
-    second(&contents);
+    // second(&contents);
+    second_refactor(&contents);
 }
 
 fn first(contents: &str) {
@@ -15,16 +16,12 @@ fn first(contents: &str) {
             let number_split: Vec<&str> = game_split[1].split('|').collect();
 
             let winning_numbers: Vec<i32> = number_split[0]
-                .trim()
-                .split(' ')
-                .filter(|n| !n.is_empty())
+                .split_whitespace()
                 .map(|n| n.parse::<i32>().unwrap())
                 .collect();
 
             let numbers: Vec<i32> = number_split[1]
-                .trim()
-                .split(' ')
-                .filter(|n| !n.is_empty())
+                .split_whitespace()
                 .map(|n| n.parse::<i32>().unwrap())
                 .collect();
 
@@ -51,6 +48,7 @@ fn first(contents: &str) {
     println!("first: {}", res);
 }
 
+// First try brute forcing
 fn second(contents: &str) {
     let scratchcards_org: Vec<&str> = contents.lines().collect();
     let mut scratchcards: Vec<&str> = contents.lines().collect();
@@ -64,16 +62,12 @@ fn second(contents: &str) {
 
         let number_split: Vec<&str> = game_split[1].split('|').collect();
         let winning_numbers: Vec<i32> = number_split[0]
-            .trim()
-            .split(' ')
-            .filter(|n| !n.is_empty())
+            .split_whitespace()
             .map(|n| n.parse::<i32>().unwrap())
             .collect();
 
         let numbers: Vec<i32> = number_split[1]
-            .trim()
-            .split(' ')
-            .filter(|n| !n.is_empty())
+            .split_whitespace()
             .map(|n| n.parse::<i32>().unwrap())
             .collect();
 
@@ -104,4 +98,57 @@ fn second(contents: &str) {
     }
 
     println!("second: {}", scratchcards.len());
+}
+
+fn second_refactor(contents: &str) {
+    let scratchcards: Vec<&str> = contents.lines().collect();
+    let mut occurances: HashMap<u32, u32> = HashMap::new();
+
+    let mut i = 1;
+    for _ in &scratchcards {
+        occurances.insert(i, 1);
+        i += 1;
+    }
+
+    for card in scratchcards.clone() {
+        let game_split: Vec<&str> = card.split(':').collect();
+        let game_num: Vec<&str> = game_split[0].split_whitespace().collect();
+        let game_num: u32 = game_num[1].parse::<u32>().unwrap();
+
+        let number_split: Vec<&str> = game_split[1].split('|').collect();
+        let winning_numbers: Vec<i32> = number_split[0]
+            .split_whitespace()
+            .map(|n| n.parse::<i32>().unwrap())
+            .collect();
+
+        let numbers: Vec<i32> = number_split[1]
+            .split_whitespace()
+            .map(|n| n.parse::<i32>().unwrap())
+            .collect();
+
+        let all_winning: Vec<i32> = numbers
+            .iter()
+            .map(|n| {
+                if winning_numbers.contains(n) {
+                    return 1;
+                }
+
+                0
+            })
+            .filter(|i| *i > 0)
+            .collect();
+
+        let copies = *occurances.get(&game_num).unwrap();
+        if !all_winning.is_empty() {
+            let mut i = 1;
+            for _ in all_winning {
+                if let Some(value) = occurances.get_mut(&(game_num + i)) {
+                    *value += copies;
+                }
+                i += 1;
+            }
+        }
+    }
+
+    println!("second: {}", &occurances.values().sum::<u32>());
 }
